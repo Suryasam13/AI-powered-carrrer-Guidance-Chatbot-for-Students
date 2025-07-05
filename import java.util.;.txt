@@ -1,0 +1,435 @@
+import java.util.*;
+
+/**
+ * AI-Powered Career Guidance Chatbot for Students (School to College)
+ * 
+ * Helps users identify suitable college majors and career paths after high school.
+ * Collects interests, strengths, subjects, personality type, and work style.
+ * Suggests relevant majors and careers with descriptions.
+ */
+public class CareerGuidanceChatbotAfterSchool {
+
+    // Stores the user session info
+    static class Session {
+        String name = "";
+        Set<String> interests = new HashSet<>();
+        Set<String> academicStrengths = new HashSet<>();
+        Set<String> preferredSubjects = new HashSet<>();
+        String personalityType = "";
+        String learningStyle = "";
+        Map<String, Integer> subjectMarks = new HashMap<>();
+        int totalMarks = 0;
+        int maxMarks = 0;
+        double cutOff = 0.0;
+        boolean completed = false;
+    }
+
+    // Info about college majors & related careers
+    static class MajorInfo {
+        String description;
+        Set<String> relatedInterests;
+        Set<String> relatedStrengths;
+        Set<String> subjectsRequired;
+        Set<String> personalityTypes;
+        Set<String> learningStyles;
+        List<String> potentialCareers;
+        String educationPath;
+
+        MajorInfo(String description, Set<String> relatedInterests, Set<String> relatedStrengths,
+                  Set<String> subjectsRequired, Set<String> personalityTypes, Set<String> learningStyles,
+                  List<String> potentialCareers, String educationPath) {
+            this.description = description;
+            this.relatedInterests = relatedInterests;
+            this.relatedStrengths = relatedStrengths;
+            this.subjectsRequired = subjectsRequired;
+            this.personalityTypes = personalityTypes;
+            this.learningStyles = learningStyles;
+            this.potentialCareers = potentialCareers;
+            this.educationPath = educationPath;
+        }
+    }
+
+    private static final Scanner scanner = new Scanner(System.in);
+    private static Session session = new Session();
+    private static Map<String, MajorInfo> majorsDatabase = new HashMap<>();
+    private static int step = 0;
+
+    public static void main(String[] args) {
+        loadMajorsDatabase();
+        printWelcome();
+
+        while (!session.completed) {
+            switch (step) {
+                case 0 -> askName();
+                case 1 -> askSubjectMarks();
+                case 2 -> askTotalMarks();
+                case 3 -> calculateCutOff();
+                case 4 -> askInterests();
+                case 5 -> askAcademicStrengths();
+                case 6 -> askPreferredSubjects();
+                case 7 -> askPersonalityType();
+                case 8 -> askLearningStyle();
+                case 9 -> suggestMajors();
+                default -> session.completed = true;
+            }
+        }
+
+        System.out.println("\nThank you for using the Career Guidance Chatbot, " + session.name + "! Wishing you a bright future.");
+    }
+
+    private static void printWelcome() {
+        System.out.println("=== Welcome to the AI-Powered Career Guidance Chatbot (School to College) ===");
+        System.out.println("I will ask you some questions to help you find suitable college majors and career paths.");
+        System.out.println("Answer honestly and type 'exit' anytime to quit.\n");
+    }
+
+    private static void askName() {
+        System.out.print("What is your name? ");
+        String input = getInput();
+        if (input == null) return;
+        session.name = input;
+        System.out.println("Nice to meet you, " + session.name + "!\n");
+        step++;
+    }
+private static void askSubjectMarks() {
+    System.out.println("Please enter your marks for the following subjects (out of 100):");
+    askMarkForSubject("math");
+    askMarkForSubject("physics");
+    askMarkForSubject("chemistry");
+    askMarkForSubject("biology");
+    step++;
+}
+
+private static void askMarkForSubject(String subject) {
+    while (true) {
+        System.out.print(subject.substring(0,1).toUpperCase() + subject.substring(1) + ": ");
+        String input = getInput();
+        if (input == null) return;
+        try {
+            int mark = Integer.parseInt(input);
+            if (mark < 0 || mark > 100) {
+                System.out.println("Please enter a valid mark between 0 and 100.");
+                continue;
+            }
+            session.subjectMarks.put(subject, mark);
+            break;
+        } catch (NumberFormatException e) {
+            System.out.println("Please enter a valid number.");
+        }
+    }
+}
+
+private static void askTotalMarks() {
+    while (true) {
+        System.out.print("Enter your total marks obtained in all subjects: ");
+        String input = getInput();
+        if (input == null) return;
+        try {
+            session.totalMarks = Integer.parseInt(input);
+            break;
+        } catch (NumberFormatException e) {
+            System.out.println("Please enter a valid number.");
+        }
+    }
+
+    while (true) {
+        System.out.print("Enter the maximum marks possible in all subjects: ");
+        String input = getInput();
+        if (input == null) return;
+        try {
+            session.maxMarks = Integer.parseInt(input);
+            break;
+        } catch (NumberFormatException e) {
+            System.out.println("Please enter a valid number.");
+        }
+    }
+
+    step++;
+}
+
+private static void calculateCutOff() {
+    // Example: Engineering cut-off = (Math) + (Physics/2) + (Chemistry/2)
+    int math = session.subjectMarks.getOrDefault("math", 0);
+    int physics = session.subjectMarks.getOrDefault("physics", 0);
+    int chemistry = session.subjectMarks.getOrDefault("chemistry", 0);
+
+    session.cutOff = (math) + (physics / 2.0) + (chemistry / 2.0);
+
+    System.out.printf("Your calculated engineering cut-off is: %.2f\n", session.cutOff);
+    step++;
+}
+
+
+    private static void askInterests() {
+        System.out.println("What are your interests? (Separate by commas)");
+        System.out.println("Examples: technology, art, science, helping others, sports, business, environment, music");
+        String input = getInput();
+        if (input == null) return;
+
+        parseAndAdd(input, session.interests);
+
+        if (session.interests.isEmpty()) {
+            System.out.println("Please enter at least one interest.");
+            return;
+        }
+        step++;
+    }
+
+    private static void askAcademicStrengths() {
+        System.out.println("What are your academic strengths? (Separate by commas)");
+        System.out.println("Examples: math, writing, problem-solving, creativity, communication, analysis");
+        String input = getInput();
+        if (input == null) return;
+
+        parseAndAdd(input, session.academicStrengths);
+
+        if (session.academicStrengths.isEmpty()) {
+            System.out.println("Please enter at least one academic strength.");
+            return;
+        }
+        step++;
+    }
+
+    private static void askPreferredSubjects() {
+        System.out.println("Which subjects do you enjoy or prefer? (Separate by commas)");
+        System.out.println("Examples: physics, biology, literature, economics, computer science, history, art");
+        String input = getInput();
+        if (input == null) return;
+
+        parseAndAdd(input, session.preferredSubjects);
+
+        if (session.preferredSubjects.isEmpty()) {
+            System.out.println("Please enter at least one preferred subject.");
+            return;
+        }
+        step++;
+    }
+
+    private static void askPersonalityType() {
+        System.out.println("Which best describes your personality?");
+        System.out.println("Options: creative, analytical, social, detail-oriented, practical");
+        String input = getInput();
+        if (input == null) return;
+
+        List<String> validTypes = List.of("creative", "analytical", "social", "detail-oriented", "practical");
+        if (!validTypes.contains(input.toLowerCase())) {
+            System.out.println("Please choose from the options: creative, analytical, social, detail-oriented, practical");
+            return;
+        }
+        session.personalityType = input.toLowerCase();
+        step++;
+    }
+
+    private static void askLearningStyle() {
+        System.out.println("What is your preferred learning style?");
+        System.out.println("Options: visual, auditory, reading/writing, kinesthetic");
+        String input = getInput();
+        if (input == null) return;
+
+        List<String> validStyles = List.of("visual", "auditory", "reading/writing", "kinesthetic");
+        if (!validStyles.contains(input.toLowerCase())) {
+            System.out.println("Please choose from the options: visual, auditory, reading/writing, kinesthetic");
+            return;
+        }
+        session.learningStyle = input.toLowerCase();
+        step++;
+    }
+
+    private static void suggestMajors() {
+        System.out.println("\nThanks for your answers, " + session.name + ". Based on your inputs, here are some suggested college majors:\n");
+        System.out.printf("Your overall percentage: %.2f%%\n", (session.totalMarks * 100.0) / session.maxMarks);
+        System.out.printf("Your cut-off score: %.2f\n\n", session.cutOff);
+        Map<String, Integer> majorScores = new HashMap<>();
+
+        for (Map.Entry<String, MajorInfo> entry : majorsDatabase.entrySet()) {
+            String major = entry.getKey();
+            MajorInfo info = entry.getValue();
+            int score = 0;
+
+            // Interests match
+            for (String interest : session.interests) {
+                if (info.relatedInterests.contains(interest)) score += 3;
+            }
+
+            // Academic strengths match
+            for (String strength : session.academicStrengths) {
+                if (info.relatedStrengths.contains(strength)) score += 3;
+            }
+
+            // Preferred subjects match
+            for (String subject : session.preferredSubjects) {
+                if (info.subjectsRequired.contains(subject)) score += 4;
+            }
+
+            // Personality type match
+            if (info.personalityTypes.contains(session.personalityType)) score += 2;
+
+            // Learning style match
+            if (info.learningStyles.contains(session.learningStyle)) score += 1;
+
+            majorScores.put(major, score);
+        }
+
+        List<Map.Entry<String, Integer>> sortedMajors = new ArrayList<>(majorScores.entrySet());
+        sortedMajors.sort((a, b) -> b.getValue() - a.getValue());
+
+        int count = 0;
+        for (Map.Entry<String, Integer> majorEntry : sortedMajors) {
+            if (count >= 5) break;
+            if (majorEntry.getValue() == 0) continue;
+
+            MajorInfo info = majorsDatabase.get(majorEntry.getKey());
+
+            System.out.println("Major: " + majorEntry.getKey());
+            System.out.println("Match Score: " + majorEntry.getValue());
+            System.out.println("Description: " + info.description);
+            System.out.println("Recommended Subjects: " + String.join(", ", info.subjectsRequired));
+            System.out.println("Personality Types: " + String.join(", ", info.personalityTypes));
+            System.out.println("Preferred Learning Styles: " + String.join(", ", info.learningStyles));
+            System.out.println("Potential Careers: " + String.join(", ", info.potentialCareers));
+            System.out.println("Typical Education Path: " + info.educationPath);
+            System.out.println("--------------------------------------------------------");
+            count++;
+        }
+
+        if (count == 0) {
+            System.out.println("Sorry, no good matches found. Consider broadening your interests or subjects.");
+        }
+
+        session.completed = true;
+    }
+
+    private static void parseAndAdd(String input, Set<String> targetSet) {
+        String[] tokens = input.toLowerCase().split(",");
+        for (String token : tokens) {
+            String trimmed = token.trim();
+            if (!trimmed.isEmpty()) {
+                targetSet.add(trimmed);
+            }
+        }
+    }
+
+    private static String getInput() {
+        System.out.print("> ");
+        String input = scanner.nextLine().trim();
+        if (input.equalsIgnoreCase("exit") || input.equalsIgnoreCase("quit")) {
+            System.out.println("Exiting the chatbot. Goodbye!");
+            System.exit(0);
+        }
+        return input.toLowerCase();
+    }
+
+    private static void loadMajorsDatabase() {
+        // Populate the majorsDatabase with sample majors & info
+
+        majorsDatabase.put("Computer Science", new MajorInfo(
+                "Focuses on computing, programming, algorithms, and software development.",
+                Set.of("technology", "science", "problem-solving"),
+                Set.of("math", "problem-solving", "logic"),
+                Set.of("computer science", "math", "physics"),
+                Set.of("analytical", "practical", "detail-oriented"),
+                Set.of("visual", "reading/writing"),
+                List.of("Software Developer", "Data Scientist", "System Analyst"),
+                "Bachelor's degree in Computer Science or related fields"
+        ));
+
+        majorsDatabase.put("Business Administration", new MajorInfo(
+                "Covers management, marketing, finance, and entrepreneurship.",
+                Set.of("business", "finance", "helping others"),
+                Set.of("communication", "leadership", "analysis"),
+                Set.of("economics", "mathematics", "accounting"),
+                Set.of("social", "practical"),
+                Set.of("auditory", "reading/writing"),
+                List.of("Business Manager", "Marketing Specialist", "Financial Analyst"),
+                "Bachelor's degree in Business or Commerce"
+        ));
+
+        majorsDatabase.put("Psychology", new MajorInfo(
+                "Study of mind, behavior, and mental processes.",
+                Set.of("helping others", "science", "social"),
+                Set.of("communication", "analysis", "writing"),
+                Set.of("biology", "psychology", "chemistry"),
+                Set.of("social", "creative"),
+                Set.of("auditory", "reading/writing"),
+                List.of("Clinical Psychologist", "Counselor", "Human Resources Specialist"),
+                "Bachelor's or Master's degree in Psychology"
+        ));
+
+        majorsDatabase.put("Engineering", new MajorInfo(
+                "Applies science and math to design, build, and maintain structures, machines, or systems.",
+                Set.of("technology", "science", "problem-solving"),
+                Set.of("math", "physics", "problem-solving"),
+                Set.of("math", "physics", "chemistry"),
+                Set.of("analytical", "practical", "detail-oriented"),
+                Set.of("visual", "kinesthetic"),
+                List.of("Civil Engineer", "Mechanical Engineer", "Electrical Engineer"),
+                "Bachelor's degree in Engineering"
+        ));
+
+        majorsDatabase.put("Fine Arts", new MajorInfo(
+                "Focuses on creative visual arts like painting, sculpture, and design.",
+                Set.of("art", "creative", "music"),
+                Set.of("creativity", "writing", "communication"),
+                Set.of("art", "history", "literature"),
+                Set.of("creative", "social"),
+                Set.of("visual", "kinesthetic"),
+                List.of("Artist", "Graphic Designer", "Animator"),
+                "Bachelor's degree in Fine Arts"
+        ));
+
+        majorsDatabase.put("Environmental Science", new MajorInfo(
+                "Studies environment, ecosystems, and solutions to environmental problems.",
+                Set.of("environment", "science", "helping others"),
+                Set.of("analysis", "problem-solving", "communication"),
+                Set.of("biology", "chemistry", "geography"),
+                Set.of("analytical", "practical", "social"),
+                Set.of("visual", "reading/writing"),
+                List.of("Environmental Scientist", "Conservationist", "Ecologist"),
+                "Bachelor's degree in Environmental Science"
+        ));
+
+        majorsDatabase.put("Medicine", new MajorInfo(
+                "Prepares students to become doctors or healthcare professionals.",
+                Set.of("helping others", "science", "social"),
+                Set.of("biology", "chemistry", "communication"),
+                Set.of("biology", "chemistry", "physics"),
+                Set.of("practical", "social", "detail-oriented"),
+                Set.of("reading/writing", "auditory"),
+                List.of("Doctor", "Nurse", "Medical Researcher"),
+                "Bachelor's degree + Medical School"
+        ));
+
+        majorsDatabase.put("Education", new MajorInfo(
+                "Focuses on teaching and educational theory.",
+                Set.of("helping others", "social", "communication"),
+                Set.of("communication", "writing", "patience"),
+                Set.of("literature", "history", "psychology"),
+                Set.of("social", "practical"),
+                Set.of("auditory", "reading/writing"),
+                List.of("Teacher", "Educational Counselor", "School Administrator"),
+                "Bachelor's degree in Education"
+        ));
+
+        majorsDatabase.put("Law", new MajorInfo(
+                "Studies legal systems, rights, and laws.",
+                Set.of("social", "helping others", "writing"),
+                Set.of("analysis", "communication", "writing"),
+                Set.of("history", "political science", "literature"),
+                Set.of("analytical", "social", "detail-oriented"),
+                Set.of("reading/writing", "auditory"),
+                List.of("Lawyer", "Judge", "Legal Consultant"),
+                "Bachelor's degree + Law School"
+        ));
+
+        majorsDatabase.put("Journalism", new MajorInfo(
+                "Focuses on reporting news and storytelling.",
+                Set.of("writing", "social", "helping others"),
+                Set.of("writing", "communication", "analysis"),
+                Set.of("literature", "history", "political science"),
+                Set.of("creative", "social"),
+                Set.of("reading/writing", "auditory"),
+                List.of("Journalist", "Editor", "Content Creator"),
+                "Bachelor's degree in Journalism or Communications"
+        ));
+    }
+}
